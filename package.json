@@ -6,20 +6,23 @@
   "license": "MIT",
   "scripts": {
     "build": "gatsby build",
-    "develop": "gatsby develop",
+    "develop": "gatsby develop -H 0.0.0.0",
     "format": "prettier --write src/**/*.{js,jsx}",
-    "start": "npm run develop",
-    "serve": "gatsby serve",
+    "start": "npm run develop -H 0.0.0.0",
+    "serve": "gatsby serve -H 0.0.0.0",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\""
   },
   "dependencies": {
     "@uifabric/fluent-theme": "^0.16.7",
     "gatsby": "^2.4.0",
+    "intersection-observer": "^0.11.0",
     "office-ui-fabric-react": "^6.176.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6"
   },
   "devDependencies": {
+    "@types/react": "^16.9.44",
+    "@types/react-dom": "^16.9.8",
     "gatsby-plugin-typescript": "^2.0.13",
     "prettier": "^1.17.0"
   },

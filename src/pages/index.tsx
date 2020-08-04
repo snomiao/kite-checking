@@ -1,66 +1,54 @@
-import React from "react"
-import { Stack, Text, Link, FontWeights } from "office-ui-fabric-react"
+import * as React from "react"
+// import { graphql } from "gatsby"
+import Layout from "../components/layout"
+import { Separator, Stack, Text, Link, FontWeights } from "office-ui-fabric-react"
+import Img from "gatsby-image"
 import "./index.css"
 
-const boldStyle = { root: { fontWeight: FontWeights.semibold } }
+// const boldStyle = { root: { fontWeight: FontWeights.semibold } }
 
-const App: React.FunctionComponent = () => {
+// const App = ({ data }) => {
+  const App = ({ }) => {
+  // checkLoginAndRedirectIfNeeded().then()
   return (
-    <Stack
-      horizontalAlign="center"
-      verticalAlign="center"
-      verticalFill
-      styles={{
-        root: {
-          width: "960px",
-          margin: "0 auto",
-          textAlign: "center",
-          color: "#605e5c",
-        },
-      }}
-      className="App"
-      gap={15}
-    >
-      <img
-        src="https://raw.githubusercontent.com/Microsoft/just/master/packages/just-stack-uifabric/template/src/components/fabric.png"
-        alt="logo"
-      />
-      <Text variant="xxLarge" styles={boldStyle}>
-        Welcome to Your UI Fabric App
-      </Text>
-      <Text variant="large">
-        For a guide on how to customize this project, check out the UI Fabric
-        documentation.
-      </Text>
-      <Text variant="large" styles={boldStyle}>
-        Essential Links
-      </Text>
-      <Stack horizontal gap={15} horizontalAlign="center">
-        <Link href="https://developer.microsoft.com/en-us/fabric">Docs</Link>
-        <Link href="https://stackoverflow.com/questions/tagged/office-ui-fabric">
-          Stack Overflow
-        </Link>
-        <Link href="https://github.com/officeDev/office-ui-fabric-react/">
-          Github
-        </Link>
-        <Link href="https://twitter.com/officeuifabric">Twitter</Link>
-      </Stack>
-      <Text variant="large" styles={boldStyle}>
-        Design System
-      </Text>
-      <Stack horizontal gap={15} horizontalAlign="center">
-        <Link href="https://developer.microsoft.com/en-us/fabric#/styles/icons">
-          Icons
-        </Link>
-        <Link href="https://developer.microsoft.com/en-us/fabric#/styles/typography">
-          Typography
-        </Link>
-        <Link href="https://developer.microsoft.com/en-us/fabric#/styles/themegenerator">
-          Theme
-        </Link>
-      </Stack>
-    </Stack>
+    <Layout>
+      <Separator> 上应小风筝 </Separator>
+      <br></br>
+      <div style={{ textAlign: 'center' }}>
+         <img
+          // src={data.file.fixed.base64}
+          src='/logos/kite.png'
+          alt="logo"
+        />
+      </div>
+      <br></br>
+      <Separator> 上应小风筝 </Separator>
+    </Layout>
   )
 }
+
+// export const query = graphql`
+//   query {
+//     file(relativePath: { eq: "kite.png" }) {
+//       childImageSharp {
+//         fixed(width: 125, height: 125) {
+//           ...GatsbyImageSharpFixed
+//         }
+//       }
+//     }
+//   }
+// `
+
+// export const query = graphql`
+//   query {
+//     file(relativePath: {eq: "kite.png"}) {
+//       childImageSharp {
+//         fixed {
+//           tracedSVG
+//         }
+//       }
+//     }
+//   }
+// `
 
 export default App

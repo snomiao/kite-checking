@@ -1,0 +1,65 @@
+### 列出申请返校的学生
+GET https://localhost:8443/api/v1/checking/student
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+
+### 搜索申请返校的学生
+GET https://localhost:8443/api/v1/checking/student?q=测试姓名
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+
+### 获取用户审核状态
+GET https://localhost:8443/api/v1/checking/student/1610200302
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+### 添加学生信息
+POST https://localhost:8443/api/v1/checking/student
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+studentId=1000000002&name=测试姓名&college=机械工程学院&Major=自动化&identityNumber=340811111111110909&approvalStatus=true
+
+### 更新学生审核状态
+PATCH https://localhost:8443/api/v1/checking/student/1610200212
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+approvalStatus=false
+
+
+### 删除记录
+DELETE https://localhost:8443/api/v1/checking/student/1000000001
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6dHJ1ZSwidWlkIjoxMH0.4Dlm_GgRwtt1ibS6b8KN2HDvubWRW5-YJhr6urKQtRk
+
+
+### 列出同级及下一级的管理员
+GET https://localhost:8443/api/v1/checking/admin
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+
+
+### 删除管理员
+DELETE https://localhost:8443/api/v1/checking/admin/0001
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVpZCI6MX0.eeFNxl21qn2zxE919_oaLtWb2Kj55Y5KY_yo0kXinZE
+

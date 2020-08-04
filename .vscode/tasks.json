@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "develop",
+			"problemMatcher": [],
+			"label": "npm: develop",
+			"detail": "gatsby develop -H 0.0.0.0"
+		},
+		{
+			"type": "npm",
+			"script": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "npm: build",
+			"detail": "gatsby build"
+		}
+	]
+}
