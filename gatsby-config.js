@@ -59,25 +59,31 @@ module.exports = {
         path: path.join(__dirname, `src`, `images`),
       },
     },
-    "gatsby-plugin-sharp",
+    {
+      resolve: `gatsby-plugin-sharp`,
+      options: {
+        useMozJpeg: false,
+        stripMetadata: true,
+        defaultQuality: 100,
+      },
+    },
     "gatsby-transformer-sharp",
-    
     `gatsby-plugin-typescript`,
     "gatsby-plugin-catch-links",
     "gatsby-plugin-sitemap",
-    {
-      resolve: `gatsby-plugin-offline`,
-      options: {
-        precachePages: [
-          `/`,
-          `/login`,
-          `/logout`,
-          `/account`,
-          `/checking`,
-          `/checking/*`,
-        ],
-      },
-    },
+    // {
+    //   resolve: `gatsby-plugin-offline`,
+    //   options: {
+    //     precachePages: [
+    //       `/`,
+    //       `/login`,
+    //       `/logout`,
+    //       `/account`,
+    //       `/checking`,
+    //       `/checking/*`,
+    //     ],
+    //   },
+    // },
 
 
     // {

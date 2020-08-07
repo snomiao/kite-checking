@@ -14,7 +14,6 @@ import {
     mergeStyles,
     mergeStyleSets,
     IContextualMenuProps,
-    IContextualMenuItem,
     DirectionalHint,
     ContextualMenu,
     CheckboxVisibility,
@@ -26,19 +25,63 @@ import {
     IDetailsColumnProps,
     getTheme,
     CommandBar,
-    Button,
-    PrimaryButton,
     Stack,
-    Layer,
-    ShimmeredDetailsList,
-    IDetailsItemProps,
     Dialog,
-    DialogFooter,
+    ChoiceGroup,
+    PrimaryButton, MessageBar, MessageBarType, ChoiceGroupOption, IChoiceGroupOption
 } from "office-ui-fabric-react"
+import Layout from "../../components/layout"
 
+import { api } from '../../api';
 
-import Layout from "../components/layout"
-import { api, checkLoginAndRedirectIfNeeded } from '../api';
+// import { CheckingAddAdmin } from './addAdmin';
+const adminLevels = { 1: '辅导员', 2: '学院管理者', 3: '学生处管理者' }
+export const CheckingAddAdmin: React.FunctionComponent = function (props) {
+    const [state, setState] = React.useState({} as { msg?, err?}) // 
+    return (
+        <Stack horizontalAlign="center">
+            <form
+                onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = Object.fromEntries(new FormData(e.currentTarget).entries())
+                    const payload = { ...form }
+                    console.log(payload);
+                    setState({ msg: '正在添加...', err: '' })
+                    const ret = await api.POST("/checking/admin", null, payload);
+                    if (ret.code) { // fail
+                        setState({ msg: '', err: ret.msg || `错误代码：3FM0#${ret.code}，请联系管理员` })
+                        return ret
+                    }
+                    setState({ msg: '添加成功！', err: '' });
+                    // 清内容
+                    // [...e?.currentTarget?.querySelectorAll('input')].forEach(e => e.value = '')
+                    // 清不了……刷新吧
+                    location.href = location.href
+                }}
+                style={{
+                    maxWidth: '30em',
+                    width: '100%'
+                }}>
+                <Stack>
+                    <TextField name='department' label='部门' />
+                    <TextField name='job_id' label='工号' />
+                    <TextField name='name' label='姓名' />
+                    <br></br>
+                    <br></br>
+                    <ChoiceGroup name='role' label='角色' required={true}
+                        options={Object.entries(adminLevels).map(([key, text]): IChoiceGroupOption => ({ key, text }))} />
+
+                </Stack>
+                {state.msg && <MessageBar messageBarType={MessageBarType.info}>{state.msg}</MessageBar>}
+                {state.err && <MessageBar messageBarType={MessageBarType.error}>{state.err}</MessageBar>}
+                <Stack>
+                    <PrimaryButton type='submit'>添加</PrimaryButton>
+                </Stack>
+            </form>
+        </Stack>
+    )
+}
+
 
 
 const theme = getTheme();
@@ -83,22 +126,65 @@ const exampleChildClass = mergeStyles({
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: '300px' } };
 
-export interface IDetailsListBasicExampleItem {
-    department: string
-    job_id: string
-    name: string
-    role: number
-    role_show: string
+export interface IDetailsListItem {
+    department?: string
+    jobId?: string
+    name?: string
+    role?: number
+    role_show?: string
+}
+
+const parseAdminInfoToItem = (adminInfo): IDetailsListItem => {
+    const { role } = adminInfo;
+    return {
+        ...adminInfo,
+        role_show: (adminLevels[role] || ('等级' + role) || '未知管理等级'),
+    }
+}
+
+// 操作资源
+interface APIResultAdmin { code, msg?, data?: IDetailsListItem }
+interface APIResultAdminList { code, msg?, data?: { count: number, students: IDetailsListItem[] } }
+const checkingAdmin = {
+    // GET /checking/student?q=测试姓名
+    // find: (search: { q?: string, index?: number, count?: number }): Promise<APIResultAdminList> =>
+    find: (search: {}): Promise<APIResultAdminList> =>
+        api.GET('/checking/admin', { search }),
+    // GET /checking/admin/1610200302
+    findOne: ({ jobId }): Promise<APIResultAdmin> =>
+        api.GET(`/checking/admin/${jobId}`),
+    // POST /checking/admin
+    insertOne: (document: IDetailsListItem) =>
+        api.POST('/checking/admin', null, document),
+    // PATCH /checking/admin/1610200212
+    updateOne: ({ jobId }, document): Promise<APIResultAdmin> =>
+        api.PATCH(`/checking/admin/${jobId}`, null, document),
+    // DELETE /checking/admin/1000000001
+    delete: ({ jobId }) =>
+        api.DELETE(`/checking/admin/${jobId}`),
 }
 
 export interface IDetailsListBasicExampleState {
     sortedColumnKey?: string;
     selectionCount?: number;
     contextualMenuProps?: IContextualMenuProps;
-    items: IDetailsListBasicExampleItem[];
+    items: IDetailsListItem[];
     selectionDetails: string;
     isSortedDescending?: boolean;
     columns: IColumn[];
+
+    // search
+    searchByFuzzy?: string
+    searchByCollege?: string
+    // paging
+    pageIndex?: number
+    pageCount?: number
+    pageItemCount?: number
+    // message
+    msg?: string
+    err?: string
+    // other functrion
+    showAddAdminDialog?: boolean
 }
 
 // isSorted: true,
@@ -109,7 +195,7 @@ export interface IDetailsListBasicExampleState {
 
 export class DetailsListBasicExample extends React.Component<{}, IDetailsListBasicExampleState> {
     private _selection: Selection;
-    private _allItems: IDetailsListBasicExampleItem[];
+    private _allItems: IDetailsListItem[];
     private _columns: IColumn[];
     constructor(props: {}) {
         super(props);
@@ -123,7 +209,7 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
 
         this._columns = [
             ['department', '部门',],
-            ['job_id', '工号',],
+            ['jobId', '工号',],
             ['name', '姓名',],
             ['role_show', '角色',],
         ].map(([key, name]) => (({
@@ -141,12 +227,23 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
             selectionDetails: this._getSelectionDetails(),
         };
         if (typeof window !== "undefined") {
-            this.loadCheckings().then()
+            this.loadCheckings(this.state).then()
         }
     }
 
-    async loadCheckings() {
-        const { code, data } = await api.get('/checking/admin')
+    private refreshItems(state) {
+        const { searchByFuzzy } = state
+        let items = this._allItems
+        if (searchByFuzzy) (items = items.filter(i =>
+            searchByFuzzy.split(' ').filter(searchKeyWord =>
+                (i.name + '|' + i.jobId + '|' + i.department + '|' + i.name)
+                    .toLowerCase().indexOf(searchKeyWord) !== -1
+            ).length
+        ))
+        this.setState({ ...state, items, searchByFuzzy })
+    }
+    async loadCheckings(state) {
+        const { code, data } = await api.GET('/checking/admin')
         if (code) {
             // this.state
             return;
@@ -154,117 +251,21 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
         console.log(data);
 
         // const {approvedAdmin, approvedTime, college, identity_number, major, name, studentId, uid,} = 
-
-        this._allItems = data.map(({
-            department, // department: "机械工程学院"
-            job_id, // job_id: "1234"
-            name, // name: "测试号"
-            role, // role: 2
-            uid, // uid: 1
-        }) => ({
-            uid,
-            department,
-            job_id,
-            name,
-            role,
-            role_show: ({ 1: '辅导员', 2: '学院管理者', 3: '学生处管理者' }[role] || ('等级' + role)),
-        }))
-        this.setState({ items: this._allItems, })
+        this._allItems = data.map(parseAdminInfoToItem)
+        this.refreshItems(this.state)
     }
 
-    public render(): JSX.Element {
-        const { items, selectionDetails } = this.state;
-        return (
-            /* <Layout>
-                <Fabric>
-                    <div className={exampleChildClass}>{selectionDetails}</div>
-                    <Announced message={selectionDetails} />
-                    <TextField
-                        // className={exampleChildClass}
-                        placeholder="查找姓名"
-                        onChange={this._onFilter}
-                        styles={textFieldStyles}
-                    />
-                    <Announced message={`Number of items after filter applied: ${items.length}.`} />
-                    <MarqueeSelection selection={this._selection}>
-                        <DetailsList
-                            isHeaderVisible={true}
-                            items={items}
-                            columns={this._columns}
-                            setKey="set"
-                            layoutMode={DetailsListLayoutMode.justified}
-                            selection={this._selection}
-                            selectionPreservedOnEmptyClick={true}
-                            ariaLabelForSelectionColumn="Toggle selection"
-                            ariaLabelForSelectAllCheckbox="Toggle selection for all items"
-                            checkButtonAriaLabel="Row checkbox"
-                            onItemInvoked={this._onItemInvoked}
-                        />
-                    </MarqueeSelection>
-                </Fabric>
-                <Separator> 上应小风筝 </Separator> 
-            </Layout>*/
-
-            <Layout>
-                <Stack horizontalAlign='center' style={{ padding: '1em', fontSize: '1.5em' }}>
-                    审核者管理 - 上应小风筝
-                </Stack>
-                <Stack horizontalAlign='center' verticalAlign='center' style={{ padding: '1em' }}>
-                    <Stack>查找：</Stack>
-                    <Stack horizontal>
-                        <SearchBox
-                            // className={checkingChildClass}
-                            // label="按姓名查找"
-                            placeholder="查找姓名"
-                            onChange={this._onFilter}
-                            styles={textFieldStyles}
-                        />
-                        {/* <SearchBox
-                            // className={checkingChildClass}
-                            // label="按学院查找"
-                            placeholder="查找学院"
-                            onChange={this._onFilterByCollege}
-                            styles={textFieldStyles}
-                        /> */}
-                    </Stack>
-                    <Stack>当前{selectionDetails}</Stack>
-                </Stack>
-                <CommandBar
-                    items={this._commands}
-                    farItems={this._farCommands}
-                    ariaLabel="Use left and right arrow keys to navigate between commands"
-                />
-                <MarqueeSelection selection={this._selection}>
-                    <DetailsList
-                        // enableShimmer={!!isLoadingData}
-                        isHeaderVisible={true}
-                        items={items}
-                        columns={this._columns}
-                        setKey="set"
-                        layoutMode={DetailsListLayoutMode.justified}
-                        selection={this._selection}
-                        selectionPreservedOnEmptyClick={true}
-                        ariaLabelForSelectionColumn="Toggle selection"
-                        ariaLabelForSelectAllCheckbox="Toggle selection for all items"
-                        checkButtonAriaLabel="Row checkbox"
-                        onItemInvoked={this._onItemInvoked}
-                    />
-                </MarqueeSelection>
-                <Separator> 上应小风筝 </Separator>
-            </Layout >
-        );
-    }
 
     private _getSelectionDetails(): string {
         const selectionCount = this._selection.getSelectedCount();
-
+        this.setState({ selectionCount })
         switch (selectionCount) {
             case 0:
-                return 'No items selected';
+                return `未选择管理员`;
             case 1:
-                return '1 item selected: ' + (this._selection.getSelection()[0] as IDetailsListBasicExampleItem).name;
+                return `选择了: ` + (this._selection.getSelection()[0] as IDetailsListItem).name;
             default:
-                return `${selectionCount} items selected`;
+                return `选择了 ${selectionCount} 个管理员`;
         }
     }
     // private _onFilter = (text: string): void => {
@@ -281,7 +282,7 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
         });
     };
 
-    private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {
+    private _onItemInvoked = (item: IDetailsListItem): void => {
         alert(`Item invoked: ${item.name}`);
     };
 
@@ -329,7 +330,7 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
         });
     };
     private _buildColumns(
-        items: IDetailsListBasicExampleItem[],
+        items: IDetailsListItem[],
         canResizeColumns?: boolean,
         onColumnClick?: (ev: React.MouseEvent<HTMLElement>, column: IColumn) => any,
         sortedColumnKey?: string,
@@ -395,7 +396,7 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
         const items = [
             {
                 key: 'aToZ',
-                name: 'A to Z',
+                name: '顺序排列',
                 iconProps: { iconName: 'SortUp' },
                 canCheck: true,
                 checked: column.isSorted && !column.isSortedDescending,
@@ -403,7 +404,7 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
             },
             {
                 key: 'zToA',
-                name: 'Z to A',
+                name: '倒序排列',
                 iconProps: { iconName: 'SortDown' },
                 canCheck: true,
                 checked: column.isSorted && column.isSortedDescending,
@@ -434,29 +435,109 @@ export class DetailsListBasicExample extends React.Component<{}, IDetailsListBas
             contextualMenuProps: undefined,
         });
     };
-    private _commands: ICommandBarItemProps[] = [
+
+    private _toggleCheckingAddAdminDialog = () => {
+        this.setState({ showAddAdminDialog: !this.state.showAddAdminDialog })
+    }
+    private _onClickDeleteAdmin = async () => {
+        const resourceName = `管理员`
+        const selItemList = this._selection.getSelection() as IDetailsListItem[]
+        if (!selItemList.length) {
+            alert('未选择${resourceName}')
+            return;
+        }
+        if (!window.confirm(`是否确定删除以下${selItemList.length}个${resourceName}？\n名单：${selItemList.map(({ name }) => name).join('、')}`))
+            return
+        let flagError = false;
+
+        selItemList.forEach(async ({ jobId }: { jobId: string }) => {
+            const { code, data } = await checkingAdmin.delete({ jobId })
+            if (code > 0) { if (flagError) return false; flagError = true; alert(`操作出错: 错误代码 ${code}，请联系管理员`); /*continue;*/; return false; }
+            if (code < 0) { if (flagError) return false; flagError = true; alert(`网络错误: 错误代码 ${code}，请检查网络连接`); /*break;*/; return false; }
+            // replace this item with new info
+            console.log('deleted admin data', data);
+
+        })
+        //     // refresh
+        this.loadCheckings(this.state)
+    }
+
+
+    private _commands_items: ICommandBarItemProps[] = [
+    ]
+    private _commands_farItems: ICommandBarItemProps[] = [
         // {
-        //     key: 'checkingAllow',
-        //     text: '✔同意返校',
-        //     // iconProps: { iconName: 'Upload' },
-        //     onClick: () => (this._onClickCheckingAllow(), null),
-        // },
-        // {
-        //     key: 'checkingBlock',
-        //     text: '删除管理员',
-        //     // iconProps: { iconName: 'Share' },
-        //     onClick: () => (this._onClickCheckingBlock(), null),
+        //     key: 'checkingAdminAdd',
+        //     text: '十 添加管理员',
+        //     onClick: this._toggleCheckingAddAdminDialog,
         // },
     ]
-    private _farCommands: ICommandBarItemProps[] = [
+    private _commands_overflowItems: ICommandBarItemProps[] = [
         // {
-        //     key: 'checkingStudentAdd',
-        //     text: '十 添加学生',
-        //     // iconProps: { iconName: 'Upload' },
-        //     // href: 'https://developer.microsoft.com/en-us/fluentui',
-        //     onClick: this._toggleCheckingStudentAddDialog,
+        //     key: 'deleteAdmin',
+        //     text: '一 删除管理员',
+        //     onClick: () => (this._onClickDeleteAdmin(), null),
         // },
     ]
+    public render(): JSX.Element {
+        const { items, selectionDetails } = this.state;
+        return (
+            <Layout fullscreen={true}><main>
+                <Stack horizontalAlign='center' style={{ padding: '1em', fontSize: '1.5em' }}>
+                    审核者管理 - 上应小风筝
+                </Stack>
+                <Stack horizontalAlign='center' verticalAlign='center' style={{ padding: '1em' }}>
+                    <Stack>查找：</Stack>
+                    <Stack horizontal>
+                        <SearchBox
+                            // className={checkingChildClass}
+                            // label="按姓名查找"
+                            placeholder="查找姓名"
+                            onChange={this._onFilter}
+                            styles={textFieldStyles}
+                        />
+                        {/* <SearchBox
+                            // className={checkingChildClass}
+                            // label="按学院查找"
+                            placeholder="查找学院"
+                            onChange={this._onFilterByCollege}
+                            styles={textFieldStyles}
+                        /> */}
+                    </Stack>
+                    <Stack>当前{selectionDetails}</Stack>
+                </Stack>
+                <CommandBar
+                    items={this._commands_items}
+                    farItems={this._commands_farItems}
+                    overflowItems={this._commands_overflowItems}
+                    ariaLabel="Use left and right arrow keys to navigate between commands"
+                />
+                <Dialog
+                    hidden={!this.state.showAddAdminDialog}
+                    onDismiss={this._toggleCheckingAddAdminDialog}
+                >
+                    <CheckingAddAdmin />
+                </Dialog>
+                <MarqueeSelection selection={this._selection}>
+                    <DetailsList
+                        // enableShimmer={!!isLoadingData}
+                        isHeaderVisible={true}
+                        items={items}
+                        columns={this._columns}
+                        setKey="set"
+                        layoutMode={DetailsListLayoutMode.justified}
+                        selection={this._selection}
+                        selectionPreservedOnEmptyClick={true}
+                        ariaLabelForSelectionColumn="Toggle selection"
+                        ariaLabelForSelectAllCheckbox="Toggle selection for all items"
+                        checkButtonAriaLabel="Row checkbox"
+                        onItemInvoked={this._onItemInvoked}
+                    />
+                </MarqueeSelection>
+                <Separator> 上应小风筝 </Separator>
+            </main></Layout>
+        );
+    }
 
 
 }

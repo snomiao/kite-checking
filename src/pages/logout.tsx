@@ -20,9 +20,9 @@ class Logout extends React.Component<{}, { msg, err }> {
     }
     render() {
         return (
-            <Layout title="登录" dontCheckLogin={true}>
+            <Layout title="登录" dontCheckLogin={true}><main>
                 <span>正在登出...</span>
-            </Layout>
+            </main></Layout>
         )
     }
 }

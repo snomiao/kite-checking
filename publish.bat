@@ -1,5 +1,7 @@
+gatsby clean && ^
+gatsby build && ^
 robocopy public publish ^
     /MIR ^
-    /XD ".vscode"
-
+    /XD ".vscode" ^
+    && ^
 code publish
