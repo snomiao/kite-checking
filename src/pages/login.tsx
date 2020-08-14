@@ -33,7 +33,6 @@ class LoginPage extends React.Component<{}, ILoginState> {
             location.href = '/checking/student'
         }
     }
-
     render() {
         return (
             <Layout title="登录">

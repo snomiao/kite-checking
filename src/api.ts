@@ -30,14 +30,6 @@ let coll = []
 const sow = (x) => (coll = x, x)
 const watch = (input: any) => (console.log(input), input)
 
-const handleError = (err) => // TODO: error type
-    // FetchError
-    (/json/i.test(err.toString())
-        && { code: err.status || -1, msg: `服务器内部错误，请联系管理员。` + (e => e ? `错误代码: ${e}` : '')(err.type || err.status || err.message), err, coll })
-    || (/network|socket/i.test(err.toString())
-        && { code: err.status || -1, msg: `网络错误，请联系管理员。` + (e => e ? `错误代码: ${e}` : '')(err.type || err.status || err.message), err, coll })
-    || { code: err.status || -1, msg: '网络错误', err }
-
 const obj2url = (payload, prefix = '') => payload ? prefix + new URLSearchParams(payload).toString() : ''
 const fetchParams = (method: string, payload = null) => {
     const token = cfg.get('token')
@@ -53,19 +45,28 @@ interface apiResult {
 }
 const uriSearch = (uri, search: object = null) =>
     apiPath + uri + obj2url(search, '?');
+const handleError = (err) => // TODO: error type
+    // FetchError
+    (/json/i.test(err.toString())
+        && { code: err.status || -1, msg: `服务器内部错误，请联系管理员。` + (e => e ? `错误代码: ${e}` : '')(err.type || err.status || err.message), err, coll })
+    || (/network|socket/i.test(err.toString())
+        && { code: err.status || -1, msg: `网络错误，请联系管理员。` + (e => e ? `错误代码: ${e}` : '')(err.type || err.status || err.message), err, coll })
+    || { code: err.status || -1, msg: '网络错误', err }
+const fetchAPI = (mathod, uri = '', search?, payload?): Promise<apiResult> =>
+    typeof fetch !== undefined
+    && fetch(uriSearch(uri, search), fetchParams('GET'))
+        .then(r => r.status == 200 && r.json() || { code: r.status, msg: r.text() })
+        .catch(handleError)
+    || (async () => ({ code: -2, msg: '加载中' }))() // ssr
 export const api = {
     GET: (uri: string, search: object = null): Promise<apiResult> =>
-        fetch(uriSearch(uri, search), fetchParams('GET'))
-            .then(r => sow(r).json()).catch(handleError),
+        fetchAPI("GET", uri, search),
     POST: (uri: string, search: object = null, payload: object = null): Promise<apiResult> =>
-        fetch(uriSearch(uri, search), fetchParams("POST", payload))
-            .then(r => sow(r).json()).catch(handleError),
+        fetchAPI('POST', uri, search, payload),
     PATCH: (uri: string, search: object = null, payload: object = null): Promise<apiResult> =>
-        fetch(uriSearch(uri, search), fetchParams("PATCH", payload))
-            .then(r => sow(r).json()).catch(handleError),
+        fetchAPI('PATCH', uri, search, payload),
     DELETE: (uri: string, search: object = null): Promise<apiResult> =>
-        fetch(uriSearch(uri, search), fetchParams("DELETE"))
-            .then(r => sow(r).json()).catch(handleError),
+        fetchAPI('DELETE', uri, search),
 }
 
 // go check in /docs/checking.http
